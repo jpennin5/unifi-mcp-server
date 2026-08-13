@@ -127,6 +127,32 @@ class TestWiredClientCounters:
             assert result[0]["rx_bytes"] == 2000000
 
     @pytest.mark.asyncio
+    async def test_wired_plain_counter_wins_when_present(self, mock_settings):
+        """A wired client with a real plain counter keeps it.
+
+        Newer firmware may report both key families; the wired- fallback
+        only fills plain counters that are absent or zero, and skips a
+        field whose wired- twin is missing entirely.
+        """
+        mac = "00:00:5e:00:53:08"
+        record = {
+            **make_wired_client(mac=mac),
+            "tx_bytes": 777,  # plain value present and nonzero: must win
+        }
+        del record["wired-rx_packets"]  # wired- twin absent: nothing to fill
+        record["rx_packets"] = 0
+        response = {"data": [record]}
+
+        with patch("src.tools.clients.UniFiClient") as mock_client_class:
+            mock_client_class.return_value = create_mock_client([response])
+
+            listed = await list_active_clients("site-1", mock_settings)
+
+            assert listed[0]["tx_bytes"] == 777
+            assert listed[0]["rx_bytes"] == 9000000
+            assert listed[0]["rx_packets"] == 0
+
+    @pytest.mark.asyncio
     async def test_wireless_zero_is_not_replaced_by_stray_wired_keys(self, mock_settings):
         """A wireless client's legitimate zero counter must stay zero.
 

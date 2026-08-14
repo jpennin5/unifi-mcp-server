@@ -2001,8 +2001,8 @@ result = await mcp.call_tool("get_dpi_statistics", {
       "total_bytes": 25600000000
     }
   ],
-  "total_applications": 15,
-  "total_categories": 6
+  "total_applications": 1,
+  "total_categories": 1
 }
 ```
 
